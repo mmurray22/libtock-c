@@ -9,7 +9,7 @@ extern "C" {
 #define DRIVER_NUM_QDEC 0x90001
 
 bool qdec_exists(void);
-int qdec_enable(void);
+//for now, no exposure in userspace: int qdec_enable(void);
 int qdec_interrupt_enable(void);
 int qdec_set_callback(subscribe_cb callback, void* callback_args);
 int qdec_displacement(void);
