@@ -18,18 +18,18 @@ static void cb(int qdec,
 }*/
 
 bool qdec_exists(void) {
-  return command(DRIVER_NUM_QDEC, 1, 1, 0) >= 0;
+  return command(DRIVER_NUM_QDEC, 0, 0, 0) >= 0;
 }
 
-/*int qdec_enable(void) {
+int qdec_enable(void) {
   return command(DRIVER_NUM_QDEC, 1, 1, 0);
-}*/
+}
 
-int qdec_interrupt_enable() {
+int qdec_interrupt_enable(void) {
   return command(DRIVER_NUM_QDEC, 2, 1, 0);
 }
 
-int qdec_set_callback(subscribe_cb callback, void* callback_args) {
+int qdec_subscribe(subscribe_cb callback, void* callback_args) {
   return subscribe(DRIVER_NUM_QDEC, 0, callback, callback_args);
 }
 
