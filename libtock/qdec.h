@@ -9,8 +9,8 @@ extern "C" {
 #define DRIVER_NUM_QDEC 0x90001
 
 bool qdec_exists(void);
-int qdec_enable(void);
-int qdec_interrupt_enable(void);
+bool qdec_enable(void);
+bool qdec_interrupt_enable(void);
 int qdec_subscribe(subscribe_cb callback, void* callback_args);
 int qdec_displacement(void);
 
