@@ -35,7 +35,6 @@ int main(void) {
   }
 
   printf("QDEC has been fully initiated!\n");
-
   return 0;
 }
  
