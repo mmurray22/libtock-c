@@ -35,10 +35,10 @@ int main(void) {
   qdec_enable();
   int ret = qdec_subscribe(qdec_callback, NULL);
   printf("Qdec subscribe result: %d\n", ret);
-  /*if (!qdec_interrupt_enable()) {
+  if (!qdec_interrupt_enable()) {
      printf("Can't enable interrupts!\n");
      return -1;
-  }*/
+  }
 
   printf("QDEC has been fully initiated!\n");
   
