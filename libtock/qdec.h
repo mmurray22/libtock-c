@@ -6,7 +6,7 @@
 extern "C" {
 #endif
 
-#define DRIVER_NUM_QDEC 0x90001
+#define DRIVER_NUM_QDEC 0x90003
 
 bool qdec_exists(void);
 bool qdec_enable(void);
