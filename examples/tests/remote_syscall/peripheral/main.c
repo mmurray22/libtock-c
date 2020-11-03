@@ -1,17 +1,18 @@
-#include <stdbool.h>
+/* Peripheral */
+#include "led.h"
+#include <button.h>
+#include <unistd.h>
+#include <spi_slave.h>
+#include "remote_syscall.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
-
-#include <led.h>
-#include <spi_slave.h>
 
 #define BUF_SIZE 16
 char rbuf[BUF_SIZE];
 char wbuf[BUF_SIZE];
-char zbuf[BUF_SIZE];
 char ibuf[BUF_SIZE];
+char zbuf[BUF_SIZE];
 bool toggle = true;
 
 // Check for buffer equality, set the LED

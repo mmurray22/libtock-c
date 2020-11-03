@@ -1,6 +1,6 @@
 #include <spi_slave.h>
 
-#define SPI_SLAVE 25
+#define SPI_SLAVE 0x20002
 
 int spi_slave_get_chip_select(void) {
   return command(SPI_SLAVE, 2, 0, 0);

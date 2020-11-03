@@ -1,8 +1,13 @@
+/* Controller */
+#include "remote_syscall.h"
+#include <console.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 #include <stdbool.h>
-
-#include <button.h>
-#include <led.h>
 #include <spi.h>
+#include <button.h>
 
 #define BUF_SIZE 16
 char rbuf[BUF_SIZE];
@@ -11,19 +16,6 @@ char ibuf[BUF_SIZE];
 char zbuf[BUF_SIZE];
 bool toggle = true;
 
-// This function checks buffer
-// equality, setting the LED if the
-// buffers are *not* equal.
-static void buffer_eq (char *buf1, char *buf2) {
-  int i;
-  for (i = 0; i < BUF_SIZE; i++) {
-    if (buf1[i] != buf2[i]) {
-      led_on(0);
-      return;
-    }
-  }
-}
-
 // This callback occurs when a read_write call completed.
 // Note that we do not start another transfer here, and
 // we simply check for buffer equality.
@@ -31,12 +23,7 @@ static void write_cb(__attribute__ ((unused)) int arg0,
                      __attribute__ ((unused)) int arg2,
                      __attribute__ ((unused)) int arg3,
                      __attribute__ ((unused)) void* userdata) {
-  led_toggle(0);
-  if (toggle) {
-    buffer_eq (wbuf, ibuf);
-  } else {
-    buffer_eq (rbuf, zbuf);
-  }
+  printf("Write callback complete!\n");
 }
 
 // This is the callback for the button press.
@@ -63,12 +50,6 @@ static void button_cb(__attribute__((unused)) int btn_num,
   }
 }
 
-// This function first initializes the various buffers to
-// their initial values. We then wait until a button press
-// to begin the transfer. Note that this program assumes that
-// the slave implementation (spi_slave_transfer) echoes our
-// buffers back to us (and the first response is all zeroes).
-// If a buffer is corrupted, we set the LED to be on.
 int main(void) {
   int i;
   for (i = 0; i < BUF_SIZE; i++) {
@@ -82,7 +63,8 @@ int main(void) {
   spi_set_rate(400000);
   spi_set_polarity(false);
   spi_set_phase(false);
-  printf("Spi is initialized!\n");
+  printf("Spi Controller is initialized!\n");
+
   button_subscribe(button_cb, NULL);
 
   int nbuttons = button_count();
