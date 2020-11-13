@@ -9,67 +9,54 @@
 #include <spi.h>
 #include <button.h>
 
-#define BUF_SIZE 16
+#define BUF_SIZE 5 // 1 + 1 + 1 + 1 + 1
 char rbuf[BUF_SIZE];
 char wbuf[BUF_SIZE];
-char ibuf[BUF_SIZE];
-char zbuf[BUF_SIZE];
-bool toggle = true;
 
-// This callback occurs when a read_write call completed.
-// Note that we do not start another transfer here, and
-// we simply check for buffer equality.
-static void write_cb(__attribute__ ((unused)) int arg0,
+void zero_wbuf(void) {
+  for (int i = 0; i < BUF_SIZE; i++) {
+    wbuf[i] = 0;
+  }
+}
+
+int* process_input(int* spi_buf) {
+  char* tok;
+  tok = strtok(wbuf, ":");
+  int i = 0;
+  while (tok && i < 5) {
+    spi_buf[i] = (int)strtol(tok, &end, 10);
+    i++;
+    tok = strtok(NULL, ":");
+  }
+}
+
+static void wsyscall_cb(__attribute__ ((unused)) int arg0,
                      __attribute__ ((unused)) int arg2,
                      __attribute__ ((unused)) int arg3,
                      __attribute__ ((unused)) void* userdata) {
-  printf("Write callback complete!\n");
-}
-
-// This is the callback for the button press.
-// Each button press represents a transfer, and
-// we do not start transfering until the button
-// has been pressed.
-static void button_cb(__attribute__((unused)) int btn_num,
-                      __attribute__ ((unused)) int val,
-                      __attribute__ ((unused)) int arg2,
-                      __attribute__ ((unused)) void* userdata) {
-  if (val == 1) {
-    if (toggle) {
-      // This is the first read write; note that this is
-      // inverted from the spi_slave_transfer, as we do
-      // not call spi_read_write until after the button
-      // is pressed.
-      spi_read_write(wbuf, rbuf, BUF_SIZE, write_cb, NULL);
-    } else {
-      spi_read_write(rbuf, wbuf, BUF_SIZE, write_cb, NULL);
-    }
-    // Note that the toggle is reset inside the button callback,
-    // not the write completed callback. This decision was arbitrary.
-    toggle = !toggle;
+  int spi_buf[5];
+  process_input(spi_buf);
+  spi_read_write((char*)spi_buf, rbuf, BUF_SIZE, NULL, NULL);
+  printf("\nWrite callback complete!\n");
+  zero_wbuf();
+  int ret = subscribe_to_caller(wsyscall_cb, wbuf, BUF_SIZE);
+  if (ret != TOCK_SUCCESS) {
+    printf("[SHORT] Error doing UART receive: %i\n", ret);
   }
 }
 
 int main(void) {
-  int i;
-  for (i = 0; i < BUF_SIZE; i++) {
-    wbuf[i] = i;
-    ibuf[i] = i;
-    zbuf[i] = 0;
-  }
-  printf("Buf setup!\n");
   spi_init();
   spi_set_chip_select(0);
   spi_set_rate(400000);
   spi_set_polarity(false);
   spi_set_phase(false);
   printf("Spi Controller is initialized!\n");
-
-  button_subscribe(button_cb, NULL);
-
-  int nbuttons = button_count();
-  int j;
-  for (j = 0; j < nbuttons; j++) {
-    button_enable_interrupt(j);
+  
+  zero_wbuf();
+  int ret = subscribe_to_caller(wsyscall_cb, wbuf, BUF_SIZE);
+  if (ret != TOCK_SUCCESS) {
+    printf("[SHORT] Error doing UART receive: %i\n", ret);
   }
+  printf("Prepped!\n");
 }

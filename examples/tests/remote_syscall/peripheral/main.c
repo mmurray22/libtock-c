@@ -8,48 +8,74 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define BUF_SIZE 16
+#define BUF_SIZE 40
 char rbuf[BUF_SIZE];
 char wbuf[BUF_SIZE];
 char ibuf[BUF_SIZE];
 char zbuf[BUF_SIZE];
 bool toggle = true;
 
-// Check for buffer equality, set the LED
-// if the buffers are *not* equal.
-static void buffer_eq (char *buf1, char *buf2) {
-  int i;
-  for (i = 0; i < BUF_SIZE; i++) {
-    if (buf1[i] != buf2[i]) {
-      led_on(0);
-      return;
-    }
+int assemble_arg(int rbufIndex, char *argBuf);
+
+int assemble_arg(int rbufIndex, char *argbuf) {
+  int argbufIndex = 0;
+  while (rbuf[rbufIndex] != 'z') {
+    argbuf[argbufIndex] = rbuf[rbufIndex];
+    rbufIndex++;
+    argbufIndex++; 
   }
+  return rbufIndex + 1;
 }
 
 // Note that this assumes the behavior of the master; that it passes us
 // a buffer with increasing i values, and on the next operation, will
 // pass us back the buffer we sent it. This is implemented in the
 // spi_master_transfer example.
-static void write_cb(__attribute__ ((unused)) int arg0,
+static void rsyscall_cb(__attribute__ ((unused)) int arg0,
                      __attribute__ ((unused)) int arg2,
                      __attribute__ ((unused)) int arg3,
                      __attribute__ ((unused)) void* userdata) {
-  printf("In write callback\n");
-  if (toggle) {
-    // The transfer before the one that just completed (either the
-    // first transfer or a subsequent transfer), the master sent us
-    // the buffer with increasing numbers.
-    buffer_eq (rbuf, ibuf);
-    spi_slave_read_write(rbuf, wbuf, BUF_SIZE, write_cb, NULL);
-  } else {
-    // The transfer before this one, we should have passed the master
-    // the zero buffer back.
-    buffer_eq (wbuf, zbuf);
-    spi_slave_read_write(wbuf, rbuf, BUF_SIZE, write_cb, NULL);
+  char syscallNumber = rbuf[0];
+  printf("Remote Syscall: %c\n", syscallNumber);
+  int index = 1;
+  char argOne[5];
+  char argTwo[10];
+  char argThree[10];
+  char argFour[10];
+  index = assemble_arg(index, argOne);
+  index = assemble_arg(index, argTwo);
+  index = assemble_arg(index, argThree);
+  assemble_arg(index, argFour);
+  printf("argOne: 0x%s\n", argOne);
+  printf("argTwo: %s\n", argTwo);
+  printf("argThree: %s\n", argThree);
+  printf("argFour: %s\n", argFour);
+  switch(syscallNumber) {
+    //Yield
+    /*case '0': syscallZero();
+            break;
+    //Subscribe
+    case '1': syscallOne(argOne, argTwo, argThree, argFour);
+            break;*/
+    //Command
+    case '2': {
+		int ret = syscallTwo(argOne, argTwo, argThree, argFour);
+		printf("Command returns: %d\n", ret);
+                break;
+	      }
+    //Allow
+    /*case '3': syscallThree(argOne, argTwo, argThree, argFour);
+              break;
+    //Read-only allow
+    case '4': syscallFour(argOne, argTwo, argThree, argFour);
+              break;
+    //Memop
+    case '5': syscallFive(argOne, argTwo);
+              break;*/
+    default: printf("This syscall is currently not supported!\n");
+             break;
   }
-  toggle = !toggle;
-  printf("In write callback, before return\n");
+  spi_slave_read_write(wbuf, rbuf, BUF_SIZE, rsyscall_cb, NULL);
 }
 
 static void selected_cb(__attribute__ ((unused)) int arg0,
@@ -69,14 +95,12 @@ int main(void) {
   printf("Start of the Spi peripheral!\n");
   int i;
   for (i = 0; i < BUF_SIZE; i++) {
-    wbuf[i] = 0;
-    zbuf[i] = 0;
-    ibuf[i] = i;
+    rbuf[i] = 0;
   }
 
   spi_slave_set_polarity(false);
   spi_slave_set_phase(false);
-  int err = spi_slave_read_write(wbuf, rbuf, BUF_SIZE, write_cb, NULL);
+  int err = spi_slave_read_write(wbuf, rbuf, BUF_SIZE, rsyscall_cb, NULL);
   if (err < 0) {
     printf("Error: spi_slave_read_write: %d\n", err);
   }
