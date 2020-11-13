@@ -36,7 +36,7 @@ static void wsyscall_cb(__attribute__ ((unused)) int arg0,
                      __attribute__ ((unused)) void* userdata) {
   int spi_buf[5];
   process_input(spi_buf);
-  spi_read_write((char*)spi_buf, rbuf, BUF_SIZE, NULL, NULL);
+  spi_read_write(wbuf, rbuf, BUF_SIZE, NULL, NULL);
   printf("\nWrite callback complete!\n");
   zero_wbuf();
   int ret = subscribe_to_caller(wsyscall_cb, wbuf, BUF_SIZE);
