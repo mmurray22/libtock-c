@@ -8,70 +8,48 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define BUF_SIZE 40
+#define BUF_SIZE 20 // 5 int arguments
 char rbuf[BUF_SIZE];
 char wbuf[BUF_SIZE];
-char ibuf[BUF_SIZE];
-char zbuf[BUF_SIZE];
-bool toggle = true;
-
-int assemble_arg(int rbufIndex, char *argBuf);
-
-int assemble_arg(int rbufIndex, char *argbuf) {
-  int argbufIndex = 0;
-  while (rbuf[rbufIndex] != 'z') {
-    argbuf[argbufIndex] = rbuf[rbufIndex];
-    rbufIndex++;
-    argbufIndex++; 
-  }
-  return rbufIndex + 1;
-}
 
 // Note that this assumes the behavior of the master; that it passes us
 // a buffer with increasing i values, and on the next operation, will
 // pass us back the buffer we sent it. This is implemented in the
 // spi_master_transfer example.
 static void rsyscall_cb(__attribute__ ((unused)) int arg0,
-                     __attribute__ ((unused)) int arg2,
-                     __attribute__ ((unused)) int arg3,
-                     __attribute__ ((unused)) void* userdata) {
-  char syscallNumber = rbuf[0];
-  printf("Remote Syscall: %c\n", syscallNumber);
-  int index = 1;
-  char argOne[5];
-  char argTwo[10];
-  char argThree[10];
-  char argFour[10];
-  index = assemble_arg(index, argOne);
-  index = assemble_arg(index, argTwo);
-  index = assemble_arg(index, argThree);
-  assemble_arg(index, argFour);
-  printf("argOne: 0x%s\n", argOne);
-  printf("argTwo: %s\n", argTwo);
-  printf("argThree: %s\n", argThree);
-  printf("argFour: %s\n", argFour);
-  switch(syscallNumber) {
+                        __attribute__ ((unused)) int arg2,
+                        __attribute__ ((unused)) int arg3,
+                        __attribute__ ((unused)) void* userdata) {
+  printf("RSYSCALL ACTIVATED!");
+  int spi_info[5];
+  memcpy(spi_info, rbuf, sizeof(rbuf));
+  printf("Syscall number: %d\n", spi_info[0]);
+  printf("Arg0: %d\n", spi_info[1]);
+  printf("Arg1: %d\n", spi_info[2]);
+  printf("Arg2: %d\n", spi_info[3]);
+  printf("Arg3: %d\n", spi_info[4]);
+  switch(spi_info[0]) {
     //Yield
-    /*case '0': syscallZero();
+    case 0: syscallZero();
             break;
     //Subscribe
-    case '1': syscallOne(argOne, argTwo, argThree, argFour);
+    /*case 1: syscallOne(spi_info[1], spi_info[2], spi_info[3], spi_info[4]);
             break;*/
     //Command
-    case '2': {
-		int ret = syscallTwo(argOne, argTwo, argThree, argFour);
+    case 2: {
+		int ret = syscallTwo(spi_info[1], spi_info[2], spi_info[3], spi_info[4]);
 		printf("Command returns: %d\n", ret);
                 break;
 	      }
     //Allow
-    /*case '3': syscallThree(argOne, argTwo, argThree, argFour);
+    /*case 3: syscallThree(spi_info[1], spi_info[2], spi_info[3], spi_info[4]);
               break;
     //Read-only allow
-    case '4': syscallFour(argOne, argTwo, argThree, argFour);
-              break;
-    //Memop
-    case '5': syscallFive(argOne, argTwo);
+    case 4: syscallFour(spi_info[1], spi_info[2], spi_info[3], spi_info[4]);
               break;*/
+    //Memop
+    case 5: syscallFive(spi_info[1], spi_info[2]);
+              break;
     default: printf("This syscall is currently not supported!\n");
              break;
   }
@@ -93,17 +71,12 @@ static void selected_cb(__attribute__ ((unused)) int arg0,
 // and never disable it.
 int main(void) {
   printf("Start of the Spi peripheral!\n");
-  int i;
-  for (i = 0; i < BUF_SIZE; i++) {
-    rbuf[i] = 0;
-  }
-
   spi_slave_set_polarity(false);
   spi_slave_set_phase(false);
   int err = spi_slave_read_write(wbuf, rbuf, BUF_SIZE, rsyscall_cb, NULL);
   if (err < 0) {
     printf("Error: spi_slave_read_write: %d\n", err);
   }
-  printf("Spi peripheral set up\n");
   spi_slave_chip_selected(selected_cb, NULL);
+  printf("Spi peripheral set up\n");
 }

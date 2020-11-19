@@ -7,13 +7,6 @@
 #define BASE_TEN 10
 #define BASE_HEX 16
 
-int convert_str_to_int(char* str, int base);
-
-int convert_str_to_int(char* str, int base) {
-  char* end;
-  return strtol(str, &end, base);
-}
-
 int subscribe_to_caller(subscribe_cb cb, char* buf, size_t len) {
   int res = getnstr_async(buf, len, cb, NULL);
   return res;
@@ -30,13 +23,8 @@ int syscallOne (size_t driverNum, size_t subscribeNum, void* arg0, subscribe_cb 
 }
 
 //Command
-int syscallTwo (char* driverNum, char* subdriverNum, char* arg0, char* arg1) {
-  int driver_num = convert_str_to_int(driverNum, BASE_HEX);
-  printf("Driver Num: %d\n", driver_num);
-  int switch_num = convert_str_to_int(subdriverNum, BASE_TEN);
-  int zero_arg = convert_str_to_int(arg0, BASE_TEN);
-  int one_arg = convert_str_to_int(arg1, BASE_TEN);
-  return command(driver_num, switch_num, zero_arg, one_arg);
+int syscallTwo (size_t driverNum, size_t subdriverNum, size_t arg0, size_t arg1) {
+  return command(driverNum, subdriverNum, arg0, arg1);
 }
 
 //Allow
