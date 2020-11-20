@@ -4,9 +4,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#define BASE_TEN 10
-#define BASE_HEX 16
-
 int subscribe_to_caller(subscribe_cb cb, char* buf, size_t len) {
   int res = getnstr_async(buf, len, cb, NULL);
   return res;

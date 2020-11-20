@@ -20,21 +20,15 @@ static void rsyscall_cb(__attribute__ ((unused)) int arg0,
                         __attribute__ ((unused)) int arg2,
                         __attribute__ ((unused)) int arg3,
                         __attribute__ ((unused)) void* userdata) {
-  printf("RSYSCALL ACTIVATED!");
   int spi_info[5];
   memcpy(spi_info, rbuf, sizeof(rbuf));
-  printf("Syscall number: %d\n", spi_info[0]);
-  printf("Arg0: %d\n", spi_info[1]);
-  printf("Arg1: %d\n", spi_info[2]);
-  printf("Arg2: %d\n", spi_info[3]);
-  printf("Arg3: %d\n", spi_info[4]);
   switch(spi_info[0]) {
     //Yield
     case 0: syscallZero();
             break;
     //Subscribe
-    /*case 1: syscallOne(spi_info[1], spi_info[2], spi_info[3], spi_info[4]);
-            break;*/
+    case 1: syscallOne(spi_info[1], spi_info[2], (void*)spi_info[3], spi_info[4]);
+            break;
     //Command
     case 2: {
 		int ret = syscallTwo(spi_info[1], spi_info[2], spi_info[3], spi_info[4]);
@@ -42,15 +36,15 @@ static void rsyscall_cb(__attribute__ ((unused)) int arg0,
                 break;
 	      }
     //Allow
-    /*case 3: syscallThree(spi_info[1], spi_info[2], spi_info[3], spi_info[4]);
+    case 3: syscallThree(spi_info[1], spi_info[2], spi_info[3], spi_info[4]);
               break;
     //Read-only allow
     case 4: syscallFour(spi_info[1], spi_info[2], spi_info[3], spi_info[4]);
-              break;*/
+              break;
     //Memop
     case 5: syscallFive(spi_info[1], spi_info[2]);
               break;
-    default: printf("This syscall is currently not supported!\n");
+    default: printf("Not supported!\n");
              break;
   }
   spi_slave_read_write(wbuf, rbuf, BUF_SIZE, rsyscall_cb, NULL);
