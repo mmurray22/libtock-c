@@ -25,7 +25,10 @@ static void rsyscall_cb(__attribute__ ((unused)) int arg0,
   memcpy(spi_info, rbuf, sizeof(rbuf));
   
   /*This switch statement uses the first entry of the array to determine what 
-    system call is being invoked */
+    system call is being invoked. Note that at this moment, all testing is
+    being done around the command system call (case 2). The other system calls
+    have not been robustly tested and should not be used at this time 
+    but will be ready for use soon. */
   switch(spi_info[0]) {
     //Subscribe
     case 1: syscallOne(spi_info[1], spi_info[2], (void*)spi_info[3], (void*)spi_info[4]);
