@@ -20,6 +20,7 @@ static void rsyscall_cb(__attribute__ ((unused)) int arg0,
                         __attribute__ ((unused)) int arg2,
                         __attribute__ ((unused)) int arg3,
                         __attribute__ ((unused)) void* userdata) {
+  printf("IN THE READ SYSTEM CALL INTERRUPT!\n");
   int spi_info[5];
   memcpy(spi_info, rbuf, sizeof(rbuf));
   switch(spi_info[0]) {
@@ -27,7 +28,7 @@ static void rsyscall_cb(__attribute__ ((unused)) int arg0,
     case 0: syscallZero();
             break;
     //Subscribe
-    case 1: syscallOne(spi_info[1], spi_info[2], (void*)spi_info[3], spi_info[4]);
+    case 1: syscallOne(spi_info[1], spi_info[2], (void*)spi_info[3], (void*)spi_info[4]);
             break;
     //Command
     case 2: {
@@ -36,10 +37,10 @@ static void rsyscall_cb(__attribute__ ((unused)) int arg0,
                 break;
 	      }
     //Allow
-    case 3: syscallThree(spi_info[1], spi_info[2], spi_info[3], spi_info[4]);
+    case 3: syscallThree(spi_info[1], spi_info[2], spi_info[3], (void*)spi_info[4]);
               break;
     //Read-only allow
-    case 4: syscallFour(spi_info[1], spi_info[2], spi_info[3], spi_info[4]);
+    case 4: syscallFour(spi_info[1], spi_info[2], spi_info[3], (void*)spi_info[4]);
               break;
     //Memop
     case 5: syscallFive(spi_info[1], spi_info[2]);
