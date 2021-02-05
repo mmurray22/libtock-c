@@ -12,8 +12,8 @@
 char rbuf[BUF_SIZE];
 char wbuf[BUF_SIZE];
 
-// Note that this assumes the behavior of the master; that it passes us
-// a buffer with increasing i values, and on the next operation, will
+// Note that this assumes the behavior of the controller is as follows: 
+// The controller passes us a buffer with increasing i values, and on the next operation, will
 // pass us back the buffer we sent it. This is implemented in the
 // spi_master_transfer example.
 static void rsyscall_cb(__attribute__ ((unused)) int arg0,
@@ -23,10 +23,10 @@ static void rsyscall_cb(__attribute__ ((unused)) int arg0,
   printf("IN THE READ SYSTEM CALL INTERRUPT!\n");
   int spi_info[5];
   memcpy(spi_info, rbuf, sizeof(rbuf));
+  
+  /*This switch statement uses the first entry of the array to determine what 
+    system call is being invoked */
   switch(spi_info[0]) {
-    //Yield
-    case 0: syscallZero();
-            break;
     //Subscribe
     case 1: syscallOne(spi_info[1], spi_info[2], (void*)spi_info[3], (void*)spi_info[4]);
             break;
@@ -51,6 +51,7 @@ static void rsyscall_cb(__attribute__ ((unused)) int arg0,
   spi_slave_read_write(wbuf, rbuf, BUF_SIZE, rsyscall_cb, NULL);
 }
 
+//Callback to indicate the peripheral has been selected
 static void selected_cb(__attribute__ ((unused)) int arg0,
                         __attribute__ ((unused)) int arg2,
                         __attribute__ ((unused)) int arg3,
