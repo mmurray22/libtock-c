@@ -23,13 +23,16 @@ static void rsyscall_cb(__attribute__ ((unused)) int arg0,
   printf("IN THE READ SYSTEM CALL INTERRUPT!\n");
   int spi_info[5];
   memcpy(spi_info, rbuf, sizeof(rbuf));
+  for (int i = 0; i < BUF_SIZE; i++) {
+    printf("rbuf: %d\n", rbuf[i]);
+  }
   
-  /*This switch statement uses the first entry of the array to determine what 
-    system call is being invoked. Note that at this moment, all testing is
-    being done around the command system call (case 2). The other system calls
-    have not been robustly tested and should not be used at this time 
-    but will be ready for use soon. */
-  switch(spi_info[0]) {
+  //This switch statement uses the first entry of the array to determine what 
+  //  system call is being invoked. Note that at this moment, all testing is
+  //  being done around the command system call (case 2). The other system calls
+  //  have not been robustly tested and should not be used at this time 
+  //  but will be ready for use soon.
+  /*switch(spi_info[0]) {
     //Subscribe
     case 1: syscallOne(spi_info[1], spi_info[2], (void*)spi_info[3], (void*)spi_info[4]);
             break;
@@ -50,7 +53,7 @@ static void rsyscall_cb(__attribute__ ((unused)) int arg0,
               break;
     default: printf("Not supported!\n");
              break;
-  }
+  }*/
   spi_slave_read_write(wbuf, rbuf, BUF_SIZE, rsyscall_cb, NULL);
 }
 
