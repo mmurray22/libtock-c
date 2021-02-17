@@ -10,7 +10,7 @@ int subscribe_to_caller(subscribe_cb cb, char* buf, size_t len) {
 }
 
 
-int execute_system_call(int* request) {
+int execute_system_call(unsigned int* request) {
   //This switch statement uses the first entry of the array to determine what 
   //  system call is being invoked. Note that at this moment, all testing is
   //  being done around the command system call (case 2). The other system calls
