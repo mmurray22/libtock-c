@@ -1,5 +1,6 @@
 /* Peripheral */
 #include "led.h"
+#include "gpio.h"
 #include <button.h>
 #include <unistd.h>
 #include <spi_slave.h>
@@ -9,8 +10,20 @@
 #include <string.h>
 
 #define BUF_SIZE 20 // 5 int arguments
+#define PIN 0 
 char rbuf[BUF_SIZE];
 char wbuf[BUF_SIZE];
+void debug_buffer(char* buf);
+
+void debug_buffer(char* buf) {
+  if (sizeof(buf) == 0) {
+    printf("Buffer is empty!\n");
+    return;
+  }
+  for (unsigned int i = 0; i < (sizeof(buf)/sizeof(buf[0])); i++) {
+    printf("Buffer element %d: %d\n", i, buf[i]);
+  }
+}
 
 // Note that this assumes the behavior of the controller is as follows: 
 // The controller passes us a buffer with increasing i values, and on the next operation, will
@@ -20,41 +33,21 @@ static void rsyscall_cb(__attribute__ ((unused)) int arg0,
                         __attribute__ ((unused)) int arg2,
                         __attribute__ ((unused)) int arg3,
                         __attribute__ ((unused)) void* userdata) {
-  printf("IN THE READ SYSTEM CALL INTERRUPT!\n");
+  printf("Read System Call!\n");
+  debug_buffer(rbuf);
+
   int spi_info[5];
   memcpy(spi_info, rbuf, sizeof(rbuf));
-  for (int i = 0; i < BUF_SIZE; i++) {
-    printf("rbuf: %d\n", rbuf[i]);
-  }
-  
-  //This switch statement uses the first entry of the array to determine what 
-  //  system call is being invoked. Note that at this moment, all testing is
-  //  being done around the command system call (case 2). The other system calls
-  //  have not been robustly tested and should not be used at this time 
-  //  but will be ready for use soon.
-  /*switch(spi_info[0]) {
-    //Subscribe
-    case 1: syscallOne(spi_info[1], spi_info[2], (void*)spi_info[3], (void*)spi_info[4]);
-            break;
-    //Command
-    case 2: {
-		int ret = syscallTwo(spi_info[1], spi_info[2], spi_info[3], spi_info[4]);
-		printf("Command returns: %d\n", ret);
-                break;
-	      }
-    //Allow
-    case 3: syscallThree(spi_info[1], spi_info[2], spi_info[3], (void*)spi_info[4]);
-              break;
-    //Read-only allow
-    case 4: syscallFour(spi_info[1], spi_info[2], spi_info[3], (void*)spi_info[4]);
-              break;
-    //Memop
-    case 5: syscallFive(spi_info[1], spi_info[2]);
-              break;
-    default: printf("Not supported!\n");
-             break;
-  }*/
+  execute_system_call(spi_info);
+
+
+  // TODO Currently sending dummy values back to peripheral
+  wbuf[0] = 1;
   spi_slave_read_write(wbuf, rbuf, BUF_SIZE, rsyscall_cb, NULL);
+  
+  //TODO Not sure if GPIO is actually needed here
+  printf("Toggle the GPIO!\n");
+  gpio_toggle(PIN);
 }
 
 //Callback to indicate the peripheral has been selected
@@ -81,4 +74,7 @@ int main(void) {
   }
   spi_slave_chip_selected(selected_cb, NULL);
   printf("Spi peripheral set up\n");
+  if (gpio_count() >= 1) {
+    gpio_enable_output(PIN);
+  }
 }
