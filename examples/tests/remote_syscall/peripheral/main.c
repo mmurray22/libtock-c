@@ -10,10 +10,15 @@
 #include <string.h>
 
 #define NUM_ARGS 5
+#define MAX_UNIQUE_ALLOW 5
+#define MAX_NUM_BUFFERS 5
 #define BUF_SIZE 20 // 5 int arguments
 #define PIN 0 
 char rbuf[BUF_SIZE];
 char wbuf[BUF_SIZE + 1];
+uint8_t* allow_buf[MAX_UNIQUE_ALLOW][MAX_NUM_BUFFERS];
+driver_info* drivers_with_buffers[MAX_UNIQUE_ALLOW];
+
 void debug_buffer(void);
 void convert_chars_to_int(unsigned int* spi_info, unsigned int start);
 void get_int_array(unsigned int* spi_info);
@@ -73,15 +78,13 @@ static void rsyscall_cb(__attribute__ ((unused)) int arg0,
   /*Print check for spi_info: for (int i = 0; i < 5; i++) {
     printf("spi_info: %d\n", spi_info[i]);
   }*/
-  int ret = execute_system_call(spi_info);
+  int ret = execute_system_call(spi_info, MAX_UNIQUE_ALLOW, MAX_NUM_BUFFERS, allow_buf[MAX_UNIQUE_ALLOW][MAX_NUM_BUFFERS], &drivers_with_buffers);
 
 
-  // TODO Currently sending dummy values back to peripheral
   wbuf[0] = 1;
   put_int_in_wbuf(ret);
   spi_slave_read_write(wbuf, rbuf, BUF_SIZE, rsyscall_cb, NULL);
   
-  //TODO Not sure if GPIO is actually needed here
   printf("Toggle the GPIO!\n");
   gpio_toggle(PIN);
 }
