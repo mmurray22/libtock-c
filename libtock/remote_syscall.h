@@ -23,7 +23,13 @@ extern "C" {
   void syscallZero(void);
   int syscallOne(size_t driverNum, size_t subscribeNum, void* arg0, subscribe_cb cb);
   int syscallTwo(size_t driverNum, size_t subdriverNum, size_t arg0, size_t arg1);
-  int syscallThree (size_t driverNum, size_t subdriverNum, size_t arg0, unsigned int driver_rows, unsigned int buf_columns, uint8_t* buffer[driver_rows][buf_columns], driver_info* drivers_with_buffers);
+  int syscallThree (size_t driverNum, 
+		    size_t subdriverNum, 
+		    size_t arg0, 
+		    unsigned int driver_rows, 
+		    unsigned int buf_columns, 
+		    uint8_t* buffer[driver_rows][buf_columns], 
+		    driver_info* drivers_with_buffers);
   int syscallFour(size_t driverNum, size_t subdriverNum, size_t arg0, char* buffer);
   void* syscallFive(size_t operand, size_t arg0);
  
