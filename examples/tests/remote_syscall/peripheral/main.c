@@ -17,7 +17,7 @@
 char rbuf[BUF_SIZE];
 char wbuf[BUF_SIZE + 1];
 uint8_t* allow_buf[MAX_UNIQUE_ALLOW][MAX_NUM_BUFFERS];
-driver_info* drivers_with_buffers[MAX_UNIQUE_ALLOW];
+driver_info drivers_with_buffers[MAX_UNIQUE_ALLOW];
 
 void debug_buffer(void);
 void convert_chars_to_int(unsigned int* spi_info, unsigned int start);
@@ -78,7 +78,7 @@ static void rsyscall_cb(__attribute__ ((unused)) int arg0,
   /*Print check for spi_info: for (int i = 0; i < 5; i++) {
     printf("spi_info: %d\n", spi_info[i]);
   }*/
-  int ret = execute_system_call(spi_info, MAX_UNIQUE_ALLOW, MAX_NUM_BUFFERS, allow_buf[MAX_UNIQUE_ALLOW][MAX_NUM_BUFFERS], &drivers_with_buffers);
+  int ret = execute_system_call(spi_info, MAX_UNIQUE_ALLOW, MAX_NUM_BUFFERS, allow_buf, drivers_with_buffers);
 
 
   wbuf[0] = 1;
