@@ -14,7 +14,7 @@
 #define MAX_NUM_BUFFERS 5
 #define BUF_SIZE 20 // 5 int arguments
 #define PIN 0 
-char rbuf[BUF_SIZE];
+char rbuf[BUF_SIZE + 4];
 char wbuf[BUF_SIZE + 1];
 uint8_t* allow_buf[MAX_UNIQUE_ALLOW][MAX_NUM_BUFFERS];
 driver_info drivers_with_buffers[MAX_UNIQUE_ALLOW];
@@ -23,6 +23,8 @@ void debug_buffer(void);
 void convert_chars_to_int(unsigned int* spi_info, unsigned int start);
 void get_int_array(unsigned int* spi_info);
 void put_int_in_wbuf(int ret);
+bool verify_checksum(unsigned int* spi_info);
+void send_response(int ret);
 
 void debug_buffer(void) {
   if (sizeof(rbuf) == 0) {
@@ -50,12 +52,21 @@ void get_int_array(unsigned int* spi_info) {
   }
 }
 
+bool verify_checksum(unsigned int* spi_info) {
+  unsigned int y = 0;
+  int len = sizeof(spi_info)/sizeof(spi_info[0]);
+  for (int i = 0; i < (len - 1); i++) {
+    y &= spi_info[i];
+  }
+  return y == spi_info[len - 1];
+}
+
 void put_int_in_wbuf(int ret) {
   if (sizeof(wbuf) < 4) {
     printf("wbuf is not long enough!\n");
     return;
   }
-
+  wbuf[0] = 1;
   for(int i = 4; i >= 1; i--) {
     wbuf[i] = ret%10;
     ret /= 10;
@@ -75,17 +86,26 @@ static void rsyscall_cb(__attribute__ ((unused)) int arg0,
 
   unsigned int spi_info[NUM_ARGS];
   get_int_array(spi_info);
+  if (!verify_checksum(spi_info)) {
+    printf("Unable to verify the checksum!\n");
+    //return; //TODO: Change 
+  }
+
+
   /*Print check for spi_info: for (int i = 0; i < 5; i++) {
     printf("spi_info: %d\n", spi_info[i]);
   }*/
+
+
   int ret = execute_system_call(spi_info, MAX_UNIQUE_ALLOW, MAX_NUM_BUFFERS, allow_buf, drivers_with_buffers);
+  send_response(ret);
+}
 
-
-  wbuf[0] = 1;
+void send_response(int ret) {
   put_int_in_wbuf(ret);
   spi_slave_read_write(wbuf, rbuf, BUF_SIZE, rsyscall_cb, NULL);
-  
   printf("Toggle the GPIO!\n");
+  gpio_toggle(PIN);
   gpio_toggle(PIN);
 }
 
