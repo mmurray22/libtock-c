@@ -10,14 +10,12 @@
 #include <string.h>
 
 #define NUM_ARGS 5
-#define MAX_UNIQUE_ALLOW 5
-#define MAX_NUM_BUFFERS 5
+#define BASE_SIZE 5 // 5 drivers' allows are supported initially
 #define BUF_SIZE 20 // 5 int arguments
 #define PIN 0 
 char rbuf[BUF_SIZE + 4];
 char wbuf[BUF_SIZE + 1];
-uint8_t* allow_buf[MAX_UNIQUE_ALLOW][MAX_NUM_BUFFERS];
-driver_info drivers_with_buffers[MAX_UNIQUE_ALLOW];
+AllowArray allow_array;
 
 void debug_buffer(void);
 void convert_chars_to_int(unsigned int* spi_info, unsigned int start);
@@ -56,8 +54,9 @@ bool verify_checksum(unsigned int* spi_info) {
   unsigned int y = 0;
   int len = sizeof(spi_info)/sizeof(spi_info[0]);
   for (int i = 0; i < (len - 1); i++) {
-    y &= spi_info[i];
+    y ^= spi_info[i];
   }
+  printf("Our checksum: %d vs. their checksum %d", y, spi_info[len-1]);
   return y == spi_info[len - 1];
 }
 
@@ -91,19 +90,18 @@ static void rsyscall_cb(__attribute__ ((unused)) int arg0,
     //return; //TODO: Change 
   }
 
-
-  /*Print check for spi_info: for (int i = 0; i < 5; i++) {
+  for (int i = 0; i < 5; i++) {
     printf("spi_info: %d\n", spi_info[i]);
-  }*/
+  }
 
-
-  int ret = execute_system_call(spi_info, MAX_UNIQUE_ALLOW, MAX_NUM_BUFFERS, allow_buf, drivers_with_buffers);
+  int ret = execute_system_call(spi_info, &allow_array);
   send_response(ret);
 }
 
 void send_response(int ret) {
   put_int_in_wbuf(ret);
   spi_slave_read_write(wbuf, rbuf, BUF_SIZE, rsyscall_cb, NULL);
+  rbuf[0] = 0;
   printf("Toggle the GPIO!\n");
   gpio_toggle(PIN);
   gpio_toggle(PIN);
@@ -137,4 +135,6 @@ int main(void) {
   if (gpio_count() >= 1) {
     gpio_enable_output(PIN);
   }
+
+  initAllowArray(&allow_array, BASE_SIZE);
 }

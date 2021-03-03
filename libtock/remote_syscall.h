@@ -1,7 +1,6 @@
 /*
  * Remote Syscalls
  */
-
 #include "tock.h"
 
 #ifdef __cplusplus
@@ -9,32 +8,40 @@ extern "C" {
 #endif
 
   typedef struct {
-        int driver_num;
-        unsigned int num_bufs_left;
-  } driver_info;
+    char** arr;
+    size_t driver_num;
+    size_t used;
+    size_t size;
+  } DriverArray;
+
+  typedef struct {
+    DriverArray* arr;
+    size_t used;
+    size_t size;
+  } AllowArray;
+
+  /* DriverArray Functions */
+  void initDriverArray(DriverArray* da, size_t initialSize);
+  void insertBuffer(DriverArray* da, char* buf, size_t buf_len); 
+  void removeBuffer(DriverArray* da, int index);
+  void freeDriverArray(DriverArray* da);
+
+  /* AllowArray Functions */
+  void initAllowArray(AllowArray* aa, size_t initialSize);
+  void insertDriverArray(AllowArray* aa, DriverArray da);
+  void removeDriverArray(AllowArray* aa, DriverArray da);
+  void freeAllowArray(AllowArray* aa);
 
   /* Peripheral Functions */
-  int subscribe_to_caller(subscribe_cb cb, char* buf, size_t len);
   int execute_system_call(unsigned int* request,
-		  	  unsigned int driver_rows,
-                          unsigned int buf_columns,
-                          uint8_t* allow_buf[driver_rows][buf_columns],
-                          driver_info* drivers_with_buffers);
+                          AllowArray* allow_array);
   void syscallZero(void);
   int syscallOne(size_t driverNum, size_t subscribeNum, void* arg0, subscribe_cb cb);
   int syscallTwo(size_t driverNum, size_t subdriverNum, size_t arg0, size_t arg1);
-  int syscallThree (size_t driverNum, 
-		    size_t subdriverNum, 
-		    size_t arg0, 
-		    unsigned int driver_rows, 
-		    unsigned int buf_columns, 
-		    uint8_t* buffer[driver_rows][buf_columns], 
-		    driver_info* drivers_with_buffers);
+  int syscallThree (size_t driverNum, size_t subdriverNum, size_t arg0, size_t buf_len, AllowArray* aa);
   int syscallFour(size_t driverNum, size_t subdriverNum, size_t arg0, char* buffer);
   void* syscallFive(size_t operand, size_t arg0);
- 
-  /* Controller Functions */
 
-#ifdef __cplusplus
+ #ifdef __cplusplus
 }
 #endif
