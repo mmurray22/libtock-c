@@ -3,6 +3,7 @@
 #include "gpio.h"
 #include <button.h>
 #include <unistd.h>
+#include <timer.h>
 #include <spi_slave.h>
 #include "remote_syscall.h"
 #include <stdio.h>
@@ -11,11 +12,13 @@
 
 #define NUM_ARGS 5
 #define BASE_SIZE 5 // 5 drivers' allows are supported initially
-#define BUF_SIZE 20 // 5 int arguments
+#define BUF_SIZE 21 // 5 int arguments + 1 char checksum
 #define PIN 0 
-char rbuf[BUF_SIZE + 4];
-char wbuf[BUF_SIZE + 1];
+char rbuf[BUF_SIZE];
+char wbuf[BUF_SIZE];
+char zbuf[BUF_SIZE];
 AllowArray allow_array;
+bool toggle = true;
 
 void debug_buffer(void);
 void convert_chars_to_int(unsigned int* spi_info, unsigned int start);
@@ -25,12 +28,12 @@ bool verify_checksum(unsigned int* spi_info);
 void send_response(int ret);
 
 void debug_buffer(void) {
-  if (sizeof(rbuf) == 0) {
+  if (sizeof(wbuf) == 0) {
     printf("Buffer is empty!\n");
     return;
   }
   for (unsigned int i = 0; i < BUF_SIZE; i++) {
-    printf("Buffer element %d: %d\n", i, rbuf[i]);
+    printf("Buffer element %d: %d\n", i, wbuf[i]);
   }
 }
 
@@ -65,8 +68,7 @@ void put_int_in_wbuf(int ret) {
     printf("wbuf is not long enough!\n");
     return;
   }
-  wbuf[0] = 1;
-  for(int i = 4; i >= 1; i--) {
+  for(int i = 3; i >= 0; i--) {
     wbuf[i] = ret%10;
     ret /= 10;
   }
@@ -81,8 +83,14 @@ static void rsyscall_cb(__attribute__ ((unused)) int arg0,
                         __attribute__ ((unused)) int arg3,
                         __attribute__ ((unused)) void* userdata) {
   printf("Read System Call!\n");
-  debug_buffer();
-
+  if (!toggle) {
+    spi_slave_read_write(zbuf, rbuf, BUF_SIZE, rsyscall_cb, NULL);
+    printf("FALSE Toggle the GPIO!\n");
+    gpio_toggle(PIN);
+    gpio_toggle(PIN);
+    toggle = !toggle;
+    return;
+  }
   unsigned int spi_info[NUM_ARGS];
   get_int_array(spi_info);
   if (!verify_checksum(spi_info)) {
@@ -96,13 +104,14 @@ static void rsyscall_cb(__attribute__ ((unused)) int arg0,
 
   int ret = execute_system_call(spi_info, &allow_array);
   send_response(ret);
+  toggle = !toggle;
 }
 
 void send_response(int ret) {
   put_int_in_wbuf(ret);
   spi_slave_read_write(wbuf, rbuf, BUF_SIZE, rsyscall_cb, NULL);
-  rbuf[0] = 0;
-  printf("Toggle the GPIO!\n");
+  debug_buffer();
+  printf("TRUE Toggle the GPIO!\n");
   gpio_toggle(PIN);
   gpio_toggle(PIN);
 }
@@ -125,7 +134,7 @@ int main(void) {
   printf("Start of the Spi peripheral!\n");
   spi_slave_set_polarity(false);
   spi_slave_set_phase(false);
-  int err = spi_slave_read_write(wbuf, rbuf, BUF_SIZE, rsyscall_cb, NULL);
+  int err = spi_slave_read_write(zbuf, rbuf, BUF_SIZE, rsyscall_cb, NULL);
   if (err < 0) {
     printf("Error: spi_slave_read_write: %d\n", err);
   }

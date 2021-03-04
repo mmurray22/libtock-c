@@ -20,6 +20,7 @@ char wbuf[BUF_SIZE];
 
 void process_input(int* spi_buf); 
 void print_buf(int* buf);
+int subscribe_to_caller(subscribe_cb cb, char* buf, size_t len);
 
 void print_buf(int* buf) {
   for (int i = 0; i < NUM_ARGS; i++) {
@@ -41,6 +42,11 @@ void process_input(int* spi_buf) {
     spi_buf[i] = 0;
     i++;
   }
+}
+
+int subscribe_to_caller(subscribe_cb cb, char* buf, size_t len) {
+  int res = getnstr_async(buf, len, cb, NULL);
+  return res;
 }
 
 static void wsyscall_cb(__attribute__ ((unused)) int arg0,
