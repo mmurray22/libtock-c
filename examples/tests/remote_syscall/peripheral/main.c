@@ -24,7 +24,7 @@ void debug_buffer(void);
 void convert_chars_to_int(unsigned int* spi_info, unsigned int start);
 void get_int_array(unsigned int* spi_info);
 void put_int_in_wbuf(int ret);
-bool verify_checksum(unsigned int* spi_info);
+bool verify_checksum(void);
 void send_response(int ret);
 
 void debug_buffer(void) {
@@ -53,14 +53,13 @@ void get_int_array(unsigned int* spi_info) {
   }
 }
 
-bool verify_checksum(unsigned int* spi_info) {
+bool verify_checksum(void) {
   unsigned int y = 0;
-  int len = sizeof(spi_info)/sizeof(spi_info[0]);
-  for (int i = 0; i < (len - 1); i++) {
-    y ^= spi_info[i];
+  for (int i = 0; i < BUF_SIZE; i++) {
+    y |= rbuf[i];
   }
-  printf("Our checksum: %d vs. their checksum %d", y, spi_info[len-1]);
-  return y == spi_info[len - 1];
+  printf("Our checksum: %d vs. their checksum %d\n", y, rbuf[BUF_SIZE - 1]);
+  return y == rbuf[BUF_SIZE - 1];
 }
 
 void put_int_in_wbuf(int ret) {
@@ -83,37 +82,37 @@ static void rsyscall_cb(__attribute__ ((unused)) int arg0,
                         __attribute__ ((unused)) int arg3,
                         __attribute__ ((unused)) void* userdata) {
   printf("Read System Call!\n");
+  int ret = 0;
   if (!toggle) {
-    spi_slave_read_write(zbuf, rbuf, BUF_SIZE, rsyscall_cb, NULL);
-    printf("FALSE Toggle the GPIO!\n");
-    gpio_toggle(PIN);
-    gpio_toggle(PIN);
-    toggle = !toggle;
+    send_response(ret);
     return;
   }
-  unsigned int spi_info[NUM_ARGS];
-  get_int_array(spi_info);
-  if (!verify_checksum(spi_info)) {
+  if (!verify_checksum()) {
     printf("Unable to verify the checksum!\n");
-    //return; //TODO: Change 
+    /*TODO Need to do something special*/
+    return;
   }
 
+  unsigned int spi_info[NUM_ARGS];
+  get_int_array(spi_info);
   for (int i = 0; i < 5; i++) {
     printf("spi_info: %d\n", spi_info[i]);
   }
 
-  int ret = execute_system_call(spi_info, &allow_array);
+  ret = execute_system_call(spi_info, &allow_array);
+  put_int_in_wbuf(ret);
   send_response(ret);
-  toggle = !toggle;
 }
 
 void send_response(int ret) {
-  put_int_in_wbuf(ret);
-  spi_slave_read_write(wbuf, rbuf, BUF_SIZE, rsyscall_cb, NULL);
-  debug_buffer();
-  printf("TRUE Toggle the GPIO!\n");
+  if (ret == 0) {
+    spi_slave_read_write(zbuf, rbuf, BUF_SIZE, rsyscall_cb, NULL);
+  } else {
+    spi_slave_read_write(wbuf, rbuf, BUF_SIZE, rsyscall_cb, NULL);
+  }
   gpio_toggle(PIN);
   gpio_toggle(PIN);
+  toggle = !toggle;
 }
 
 //Callback to indicate the peripheral has been selected
